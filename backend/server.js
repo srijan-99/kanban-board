@@ -40,6 +40,10 @@ app.use((err, req, res, next) => {
 // Serve static files
 app.use(express.static(path.join(__dirname, 'dist')));
 
+app.get('/', (req, res) => {
+    res.send("Backend Server is running");
+});
+
 // Handle client-side routing
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
