@@ -1,0 +1,198 @@
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import morgan from 'morgan';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config();
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(morgan('dev')); // Add morgan middleware for logging
+
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kanban-board');
+
+const sectionSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true
+    },
+    tasks: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Task'
+    }]
+});
+
+const taskSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    dueDate: {
+        type: Date,
+        required: true
+    },
+    assignee: {
+        id: {
+            type: String,
+            required: true
+        },
+        name: {
+            type: String,
+            required: true
+        },
+        avatar: {
+            type: String,
+            required: true
+        }
+    },
+    sectionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Section',
+        required: true
+    },
+    tag: {
+        type: String,
+        required: true
+    }
+});
+
+const Section = mongoose.model('Section', sectionSchema);
+const Task = mongoose.model('Task', taskSchema);
+
+// Routes - Sections
+app.get('/api/sections', async (req, res) => {
+    try {
+        const sections = await Section.find().populate('tasks');
+        res.json(sections);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.post('/api/sections', async (req, res) => {
+    try {
+        const section = new Section({
+            title: req.body.title
+        });
+        const newSection = await section.save();
+        res.status(201).json(newSection);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// Routes - Tasks
+app.post('/api/sections/:sectionId/tasks', async (req, res) => {
+    try {
+        const task = new Task({
+            title: req.body.title,
+            description: req.body.description,
+            dueDate: req.body.dueDate,
+            assignee: req.body.assignee,
+            sectionId: req.params.sectionId,
+            tag: req.body.tag
+        });
+        const newTask = await task.save();
+        
+        // Update section with new task
+        await Section.findByIdAndUpdate(
+            req.body.sectionId,
+            { $push: { tasks: newTask._id } }
+        );
+        
+        res.status(201).json(newTask);
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ message: error.message });
+    }
+});
+
+app.patch('/api/tasks/:id', async (req, res) => {
+    try {
+        const updatedTask = await Task.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+        res.json(updatedTask);
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ message: error.message });
+    }
+});
+
+app.put('/api/tasks/:id/move', async (req, res) => {
+    try {
+        const { fromSectionId, toSectionId } = req.body;
+        const taskId = req.params.id;
+
+        // Remove task from old section
+        await Section.findByIdAndUpdate(fromSectionId, {
+            $pull: { tasks: taskId }
+        });
+
+        // Add task to new section
+        await Section.findByIdAndUpdate(toSectionId, {
+            $push: { tasks: taskId }
+        });
+
+        // Update task's sectionId
+        const updatedTask = await Task.findByIdAndUpdate(taskId, 
+            { sectionId: toSectionId },
+            { new: true }
+        );
+
+        res.json(updatedTask);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+app.delete('/api/tasks/:id', async (req, res) => {
+    try {
+        const task = await Task.findById(req.params.id);
+        await Section.findByIdAndUpdate(task.sectionId, {
+            $pull: { tasks: req.params.id }
+        });
+        await Task.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Task deleted' });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!' });
+});
+
+// Serve static files from the 'dist' directory
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Serve index.html for all other routes to support client-side routing
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}, http://localhost:${PORT}`);
+});
