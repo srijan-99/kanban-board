@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
 
     const register = async (userData) => {
-        await axios.post('/api/auth/register', userData).then((res) => {
+        await axios.post('https://kanban-backend-gamma.vercel.app/api/auth/register', userData).then((res) => {
             console.log(`User registration success`, res);
             setUser(JSON.stringify(res.data));
             localStorage.setItem('user', JSON.stringify(res.data));
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const login = async (userData) => {
-        await axios.post('/api/auth/login', userData).then((res) => {
+        await axios.post('https://kanban-backend-gamma.vercel.app/api/auth/login', userData).then((res) => {
             console.log(`User login success`, res);
             setUser(JSON.stringify(res.data));
             localStorage.setItem('user', JSON.stringify(res.data));
