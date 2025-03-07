@@ -15,7 +15,7 @@ export const KanbanProvider = ({ children }) => {
     const fetchSections = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/sections');
+        const response = await axios.get('https://kanban-backend-gamma.vercel.app/api/sections');
         if (response.status === 401) {
           alert(`Login Required`);
           window.location.href = '/login';
@@ -35,7 +35,7 @@ export const KanbanProvider = ({ children }) => {
 
   const addSection = async (title) => {
     try {
-      const response = await axios.post('/api/sections', { title });
+      const response = await axios.post('https://kanban-backend-gamma.vercel.app/api/sections', { title });
       setSections((prev) => [...prev, response.data]);
       toast.success('Section added successfully');
     } catch (error) {
@@ -46,7 +46,7 @@ export const KanbanProvider = ({ children }) => {
 
   const editSection = async (sectionId, newTitle) => {
     try {
-      const response = await axios.patch(`/api/sections/${sectionId}`, { title: newTitle });
+      const response = await axios.patch(`https://kanban-backend-gamma.vercel.app/api/sections/${sectionId}`, { title: newTitle });
       setSections((prev) =>
         prev.map((section) =>
           section._id === sectionId ? { ...section, title: response.data.title } : section
@@ -61,7 +61,7 @@ export const KanbanProvider = ({ children }) => {
 
   const deleteSection = async (sectionId) => {
     try {
-      await axios.delete(`/api/sections/${sectionId}`);
+      await axios.delete(`https://kanban-backend-gamma.vercel.app/api/sections/${sectionId}`);
       setSections((prev) => prev.filter((section) => section._id !== sectionId));
       toast.success("Section deleted successfully");
     } catch (error) {
@@ -73,7 +73,7 @@ export const KanbanProvider = ({ children }) => {
 
   const addTask = async (sectionId, taskData) => {
     try {
-      const response = await axios.post(`/api/sections/${sectionId}/tasks`, taskData);
+      const response = await axios.post(`https://kanban-backend-gamma.vercel.app/api/sections/${sectionId}/tasks`, taskData);
       setSections((prev) =>
         prev.map((section) =>
           section._id === sectionId
@@ -92,7 +92,7 @@ export const KanbanProvider = ({ children }) => {
 
   const editTask = async (taskId, updatedData) => {
     try {
-      const response = await axios.patch(`/api/tasks/${taskId}`, updatedData);
+      const response = await axios.patch(`https://kanban-backend-gamma.vercel.app/api/tasks/${taskId}`, updatedData);
       setSections((prev) =>
         prev.map((section) => ({
           ...section,
@@ -110,7 +110,7 @@ export const KanbanProvider = ({ children }) => {
 
   const deleteTask = async (sectionId, taskId) => {
     try {
-      await axios.delete(`/api/tasks/${taskId}`);
+      await axios.delete(`https://kanban-backend-gamma.vercel.app/api/tasks/${taskId}`);
       setSections((prev) =>
         prev.map((section) =>
           section._id === sectionId
@@ -127,7 +127,7 @@ export const KanbanProvider = ({ children }) => {
 
   const moveTask = async (fromSectionId, toSectionId, taskId) => {
     try {
-      await axios.put(`/api/tasks/${taskId}/move`, { fromSectionId, toSectionId });
+      await axios.put(`https://kanban-backend-gamma.vercel.app/api/tasks/${taskId}/move`, { fromSectionId, toSectionId });
       setSections((prev) =>
         prev.map((section) => {
           if (section._id === fromSectionId) {
